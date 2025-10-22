@@ -30,8 +30,8 @@ const createWindow = () => {
   // mainWindow.webContents.openDevTools();
 
   const testOverlay = new BrowserWindow({
-    width: 400,
-    height: 300,
+    width: 900,
+    height: 500,
     frame: false,          // Removes window borders
     transparent: false,     // Makes window background transparent
     alwaysOnTop: true,     // Keeps window above other apps

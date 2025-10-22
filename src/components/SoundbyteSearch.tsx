@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react"
 import { matchSorter } from "match-sorter";
 import axios from "axios";
-import { ipcRenderer } from "electron";
 
 export type Soundbyte = {
     id: number,
@@ -11,10 +10,18 @@ export type Soundbyte = {
 
 export type SoundbytesResponse = Soundbyte[]
 
+enum Mode {
+    query,
+    select
+}
+
 export default function SoundbyteSearch() {
     const [query, setQuery] = useState<string>();
+    const [mode, setMode] = useState<Mode>(Mode.query);
+    const [selectedIndex, setSelectedIndex] = useState<number>(-1);
     const [soundbytes, setSoundbytes] = useState<Soundbyte[]>();
     const searchInput = useRef<HTMLInputElement>(null);
+    const containerDiv = useRef<HTMLDivElement>(null);
 
     // fetch soundbytes on mount
     useEffect(() => {
@@ -26,15 +33,10 @@ export default function SoundbyteSearch() {
         fetchSoundbytes();
     }, []);
 
-    const soundbyteNames = useMemo(() => {
-        if (!soundbytes) return;
-        return soundbytes.map(sb => sb.name);
-    }, [soundbytes]);
-
     const results = useMemo(() => {
-        if (!soundbyteNames || !query) return;
-        return matchSorter(soundbyteNames, query);
-    }, [query, soundbyteNames]);
+        if (!soundbytes || !query) return;
+        return matchSorter(soundbytes, query, { keys: ['name'] });
+    }, [query, soundbytes]);
 
     useEffect(() => {
         window.electronAPI.onFocusInput(() => {
@@ -42,8 +44,39 @@ export default function SoundbyteSearch() {
         });
     }, []);
 
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (mode === Mode.query) {
+            console.log(`Query mode`)
+            if (e.key === 'Enter') {
+                // Enter → switch to select mode
+                e.preventDefault();
+                setMode(Mode.select);
+                setSelectedIndex(0); // highlight first result
+                containerDiv?.current.focus();
+            }
+        } else if (mode === Mode.select) {
+            console.log(`Select mode`)
+            if (e.key === 'Enter' || e.key === "Escape") {
+                e.preventDefault();
+                console.log('Selected item:', results[selectedIndex]);
+                // // TODO: trigger action
+                setMode(Mode.query);
+                setSelectedIndex(-1); // remove highlight
+                searchInput?.current.focus();
+            } else if (e.key.toLowerCase() === 'j' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                setSelectedIndex(prev => Math.min(prev + 1, results.length - 1));
+            } else if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                setSelectedIndex((prev) => Math.max(prev - 1, 0));
+            }
+        }
+    }
     return (
-        <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
+        <div style={{ padding: '20px', fontFamily: 'sans-serif' }}
+            onKeyDown={handleKeyDown}
+            tabIndex={0}
+            ref={containerDiv}>
             <input
                 type="text"
                 ref={searchInput}
@@ -53,13 +86,24 @@ export default function SoundbyteSearch() {
                 style={{ padding: '10px', width: '300px', fontSize: '16px' }}
             />
 
-            <ul style={{ marginTop: '20px' }}>
-                {results?.map(sb => (
-                    <li key={sb} style={{ padding: '5px 0' }}>
-                        {sb}
+            <ul style={{
+                marginTop: '20px',
+                listStyle: 'none',
+                padding: 0,
+                margin: 0
+            }}>
+                {results?.map((sb, index) => (
+                    <li
+                        key={sb.name}
+                        style={{
+                            padding: '5px 0',
+                            background: index === selectedIndex ? '#555' : 'transparent',
+                            borderRadius: '4px'
+                        }}>
+                        {sb.name}
                     </li>
                 ))}
             </ul>
         </div>
     );
-}
+};
