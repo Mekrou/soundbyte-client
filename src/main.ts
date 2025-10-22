@@ -28,6 +28,21 @@ const createWindow = () => {
 
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
+
+  // const testOverlay = new BrowserWindow({
+  //   width: 400,
+  //   height: 300,
+  //   frame: false,          // Removes window borders
+  //   transparent: false,     // Makes window background transparent
+  //   alwaysOnTop: true,     // Keeps window above other apps
+  //   skipTaskbar: false,     // Don’t show in taskbar
+  //   resizable: false,
+  //   webPreferences: {
+  //     nodeIntegration: true,
+  //     contextIsolation: false,
+  //   },
+  // });
+  // testOverlay.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
 };
 
 // This method will be called when Electron has finished
