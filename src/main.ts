@@ -1,4 +1,4 @@
-import { app, BrowserWindow, globalShortcut } from 'electron';
+import { app, BrowserWindow, globalShortcut, Tray, Menu } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 
@@ -29,7 +29,7 @@ const createWindow = () => {
   // // Open the DevTools.
   // mainWindow.webContents.openDevTools();
 
-  const testOverlay = new BrowserWindow({
+  const overlayWindow = new BrowserWindow({
     width: 900,
     height: 500,
     frame: false,          // Removes window borders
@@ -43,17 +43,25 @@ const createWindow = () => {
       preload: path.join(__dirname, 'preload.js')
     },
   });
-  testOverlay.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+  
+  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+    overlayWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL + '?route=search');
+  } else {
+    overlayWindow.loadFile(
+      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html?route=search`),
+    );
+  }
 
-  testOverlay.hide();
+  overlayWindow.hide();
 
-  const ret = globalShortcut.register('CommandOrControl+Shift+O', () => {
-    if (testOverlay.isVisible()) {
-      testOverlay.hide()
+  // Register hot-key to launch search
+  globalShortcut.register('CommandOrControl+Shift+O', () => {
+    if (overlayWindow.isVisible()) {
+      overlayWindow.hide()
     } else {
-      testOverlay.show();
-      testOverlay.focus();
-      testOverlay.webContents.send('focus-input');
+      overlayWindow.show();
+      overlayWindow.focus();
+      overlayWindow.webContents.send('focus-input');
     }
   })
 };

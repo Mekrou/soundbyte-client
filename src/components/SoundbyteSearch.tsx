@@ -15,6 +15,10 @@ enum Mode {
     select
 }
 
+export async function onSoundbyteSelect(soundbyte: Soundbyte) {
+    await axios.post<{ success: boolean }>(`http://localhost:3000/soundbytes/${soundbyte.id}/play`);
+}
+
 export default function SoundbyteSearch() {
     const [query, setQuery] = useState<string>();
     const [mode, setMode] = useState<Mode>(Mode.query);
@@ -56,19 +60,20 @@ export default function SoundbyteSearch() {
             }
         } else if (mode === Mode.select) {
             console.log(`Select mode`)
-            if (e.key === 'Enter' || e.key === "Escape") {
+            if (e.key === 'Enter') {
                 e.preventDefault();
-                console.log('Selected item:', results[selectedIndex]);
-                // // TODO: trigger action
-                setMode(Mode.query);
-                setSelectedIndex(-1); // remove highlight
-                searchInput?.current.focus();
+                onSoundbyteSelect(results[selectedIndex]);
             } else if (e.key.toLowerCase() === 'j' || e.key === 'ArrowDown') {
                 e.preventDefault();
                 setSelectedIndex(prev => Math.min(prev + 1, results.length - 1));
             } else if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'k') {
                 e.preventDefault();
                 setSelectedIndex((prev) => Math.max(prev - 1, 0));
+            } else if (e.key == "Escape") {
+                e.preventDefault()
+                setMode(Mode.query);
+                setSelectedIndex(-1); // remove highlight
+                searchInput?.current.focus();
             }
         }
     }
