@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, globalShortcut } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 
@@ -8,41 +8,54 @@ if (started) {
 }
 
 const createWindow = () => {
-  // Create the browser window.
-  const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-    },
-  });
-
-  // and load the index.html of the app.
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
-  } else {
-    mainWindow.loadFile(
-      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
-    );
-  }
-
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
-
-  // const testOverlay = new BrowserWindow({
-  //   width: 400,
-  //   height: 300,
-  //   frame: false,          // Removes window borders
-  //   transparent: false,     // Makes window background transparent
-  //   alwaysOnTop: true,     // Keeps window above other apps
-  //   skipTaskbar: false,     // Don’t show in taskbar
-  //   resizable: false,
+  // // Create the browser window.
+  // const mainWindow = new BrowserWindow({
+  //   width: 800,
+  //   height: 600,
   //   webPreferences: {
-  //     nodeIntegration: true,
-  //     contextIsolation: false,
+  //     preload: path.join(__dirname, 'preload.js'),
   //   },
   // });
-  // testOverlay.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+
+  // // and load the index.html of the app.
+  // if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+  //   mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+  // } else {
+  //   mainWindow.loadFile(
+  //     path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
+  //   );
+  // }
+
+  // // Open the DevTools.
+  // mainWindow.webContents.openDevTools();
+
+  const testOverlay = new BrowserWindow({
+    width: 400,
+    height: 300,
+    frame: false,          // Removes window borders
+    transparent: false,     // Makes window background transparent
+    alwaysOnTop: true,     // Keeps window above other apps
+    skipTaskbar: false,     // Don’t show in taskbar
+    resizable: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
+    },
+  });
+  testOverlay.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+
+  testOverlay.hide();
+
+  const ret = globalShortcut.register('CommandOrControl+Shift+O', () => {
+    if (testOverlay.isVisible()) {
+      testOverlay.hide()
+    } else {
+      testOverlay.show();
+      testOverlay.focus();
+      testOverlay.webContents.send('focus-input');
+    }
+  })
 };
 
 // This method will be called when Electron has finished
@@ -69,3 +82,6 @@ app.on('activate', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
+});

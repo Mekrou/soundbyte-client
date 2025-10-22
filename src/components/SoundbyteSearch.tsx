@@ -1,6 +1,7 @@
-import React, { useState, useMemo, useEffect } from "react"
+import React, { useState, useMemo, useEffect, useRef } from "react"
 import { matchSorter } from "match-sorter";
 import axios from "axios";
+import { ipcRenderer } from "electron";
 
 export type Soundbyte = {
     id: number,
@@ -13,6 +14,7 @@ export type SoundbytesResponse = Soundbyte[]
 export default function SoundbyteSearch() {
     const [query, setQuery] = useState<string>();
     const [soundbytes, setSoundbytes] = useState<Soundbyte[]>();
+    const searchInput = useRef<HTMLInputElement>(null);
 
     // fetch soundbytes on mount
     useEffect(() => {
@@ -34,10 +36,17 @@ export default function SoundbyteSearch() {
         return matchSorter(soundbyteNames, query);
     }, [query, soundbyteNames]);
 
+    useEffect(() => {
+        window.electronAPI.onFocusInput(() => {
+            if (searchInput.current) searchInput.current.focus();
+        });
+    }, []);
+
     return (
         <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
             <input
                 type="text"
+                ref={searchInput}
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 placeholder="Search soundbytes..."
