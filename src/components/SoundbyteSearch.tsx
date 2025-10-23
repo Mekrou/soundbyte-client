@@ -26,16 +26,32 @@ export default function SoundbyteSearch() {
     const [soundbytes, setSoundbytes] = useState<Soundbyte[]>();
     const searchInput = useRef<HTMLInputElement>(null);
     const containerDiv = useRef<HTMLDivElement>(null);
+    const ulRef = useRef<HTMLUListElement>(null);
+
+    async function fetchSoundbytes() {
+        const res = await axios.get<SoundbytesResponse>("http://localhost:3000/soundbytes/")
+        setSoundbytes(res.data);
+    }
 
     // fetch soundbytes on mount
-    useEffect(() => {
-        async function fetchSoundbytes() {
-            const res = await axios.get<SoundbytesResponse>("http://localhost:3000/soundbytes/")
-            setSoundbytes(res.data);
-        }
+    useEffect(() => { fetchSoundbytes() }, []);
 
-        fetchSoundbytes();
-    }, []);
+    useEffect(() => {
+        const container = containerDiv.current;
+        if (!container) return;
+
+        const resizeObserver = new ResizeObserver(() => {
+            const rect = container.getBoundingClientRect();
+            window.electronAPI.sendResize({
+                width: Math.ceil(rect.width),
+                height: Math.ceil(rect.height),
+            });
+        });
+
+        resizeObserver.observe(container);
+        return () => resizeObserver.disconnect();
+    }, [query]);
+
 
     const results = useMemo(() => {
         if (!soundbytes || !query) return;
@@ -45,6 +61,10 @@ export default function SoundbyteSearch() {
     useEffect(() => {
         window.electronAPI.onFocusInput(() => {
             if (searchInput.current) searchInput.current.focus();
+            setMode(Mode.query);
+            fetchSoundbytes();
+            setQuery('');
+            setSelectedIndex(-1);
         });
     }, []);
 
@@ -69,16 +89,26 @@ export default function SoundbyteSearch() {
             } else if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'k') {
                 e.preventDefault();
                 setSelectedIndex((prev) => Math.max(prev - 1, 0));
-            } else if (e.key == "Escape") {
+            } else if (e.key === "Escape") {
                 e.preventDefault()
                 setMode(Mode.query);
                 setSelectedIndex(-1); // remove highlight
+                searchInput?.current.focus();
+            } else if (e.key === "Backspace") {
+                e.preventDefault();
+                setMode(Mode.query);
+                setSelectedIndex(-1);
                 searchInput?.current.focus();
             }
         }
     }
     return (
-        <div style={{ padding: '20px', fontFamily: 'sans-serif' }}
+        <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            fontFamily: 'sans-serif',
+            pointerEvents: 'none',
+        }}
             onKeyDown={handleKeyDown}
             tabIndex={0}
             ref={containerDiv}>
@@ -86,24 +116,37 @@ export default function SoundbyteSearch() {
                 type="text"
                 ref={searchInput}
                 value={query}
+                tabIndex={-1}
                 onChange={e => setQuery(e.target.value)}
                 placeholder="Search soundbytes..."
-                style={{ padding: '10px', width: '300px', fontSize: '16px' }}
+                style={{ 
+                    color: "white",
+                    opacity: 1,
+                    border: 'none',
+                    outline: '2px solid white',
+                    outlineOffset: '2px',
+                    padding: '10px', 
+                    fontSize: '24px',
+                    background: 'transparent'
+                }}
             />
 
-            <ul style={{
-                marginTop: '20px',
+            <ul ref={ulRef} style={{
                 listStyle: 'none',
                 padding: 0,
-                margin: 0
+                margin: 0,
             }}>
                 {results?.map((sb, index) => (
                     <li
                         key={sb.name}
                         style={{
-                            padding: '5px 0',
-                            background: index === selectedIndex ? '#555' : 'transparent',
-                            borderRadius: '4px'
+                            padding: '0.2rem 0.4rem',
+                            background:
+                                index === selectedIndex
+                                    ? '#71b9beff' // highlight color
+                                    : index % 2 === 0
+                                        ? '#2b2b2b' // even rows (darker)
+                                        : '#3a3a3a', // odd rows (lighter)
                         }}>
                         {sb.name}
                     </li>

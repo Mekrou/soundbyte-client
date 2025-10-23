@@ -4,7 +4,8 @@ export {};
 declare global {
   interface Window {
     electronAPI: {
-      onFocusInput: (callback: () => void) => void;
+      onFocusInput: (callback: () => void) => void,
+      sendResize: (size: { width: number, height: number}) => void
     };
   }
 }

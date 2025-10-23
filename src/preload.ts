@@ -3,5 +3,6 @@
 import { contextBridge, ipcRenderer } from "electron";
 
 contextBridge.exposeInMainWorld('electronAPI', {
-    onFocusInput: (callback: () => void) => ipcRenderer.on('focus-input', callback)
+    onFocusInput: (callback: () => void) => ipcRenderer.on('focus-input', callback),
+    sendResize: (size: { width: number, height: number }) => ipcRenderer.send('resize-window', size)
 });
